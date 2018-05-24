@@ -1,0 +1,82 @@
+﻿<Window x:Class="Kalkulator_Wyborczy.Statistics"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:Kalkulator_Wyborczy"
+        xmlns:chart="clr-namespace:System.Windows.Controls.DataVisualization.Charting;assembly=System.Windows.Controls.DataVisualization.Toolkit"
+        Closing="Window_Closing"
+        mc:Ignorable="d"
+        Title="Statistics" Height="450" Width="800">
+    <Window.Resources>
+        <Style x:Key="GroupHeader" TargetType="{x:Type GroupItem}">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type GroupItem}">
+                        <StackPanel>
+                            <TextBlock Text="{Binding Name}"/>
+                            <ItemsPresenter/>
+                        </StackPanel>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="auto"/>
+            <RowDefinition/>
+        </Grid.RowDefinitions>
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="auto"/>
+                <ColumnDefinition Width="auto"/>
+                <ColumnDefinition Width="auto"/>
+                <ColumnDefinition Width="auto"/>
+                <ColumnDefinition/>
+                <ColumnDefinition Width="auto"/>
+                <ColumnDefinition Width="auto"/>
+                <ColumnDefinition Width="auto"/>
+                <ColumnDefinition Width="auto"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Text="Data: " VerticalAlignment="Center" Grid.Column="0" FontSize="15"/>
+            <ComboBox x:Name="dataType" SelectedValue="Votes" SelectionChanged="dataCombo_SelectionChanged"  Grid.Column="1" VerticalAlignment="Center" Margin="0,0,5,0"/>
+
+            <TextBlock Text="Visualisation:" VerticalAlignment="Center" Grid.Column="2" FontSize="15"/>
+            <ComboBox x:Name="visualisationType" SelectedValue="Data grid" SelectionChanged="dataCombo_SelectionChanged" Grid.Column="3" VerticalAlignment="Center"/>
+                       
+            <Button x:Name="csvExport" Click="csvExport_Click" BorderBrush="Red" Background="White" BorderThickness="2" Margin="8" Content="export as CSV file" Padding="10,8" Grid.Column="6"/>
+            <Button x:Name="pdfExport" Click="pdfExport_Click" BorderBrush="Red" Background="White" BorderThickness="2" Margin="8" Content="export as PDF file" Padding="10,8" Grid.Column="7"/>
+            <Button x:Name="importDatabase" Click="importDatabase_Click" BorderBrush="Red" Background="White" BorderThickness="2" Margin="8" Content="import app's database as JSON" Padding="10,8" Grid.Column="8"/> 
+        </Grid>
+        <!--DATA GRIDS-->
+        <Grid  Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="auto"/>
+                <ColumnDefinition Width="auto"/>
+            </Grid.ColumnDefinitions>
+            <DataGrid  x:Name="countData" Grid.Column="0" HorizontalAlignment="Left"  ItemsSource="{Binding}" IsReadOnly="True">
+                <DataGrid.GroupStyle>
+                    <GroupStyle ContainerStyle="{StaticResource GroupHeader}">
+                        <GroupStyle.Panel>
+                            <ItemsPanelTemplate>
+                                <DataGridRowsPresenter/>
+                            </ItemsPanelTemplate>
+                        </GroupStyle.Panel>
+                    </GroupStyle>
+                </DataGrid.GroupStyle>
+            </DataGrid>
+            <DataGrid  x:Name="partyVotes" Grid.Column="1" HorizontalAlignment="Left"  ItemsSource="{Binding}" IsReadOnly="True"/>
+        </Grid>
+
+        <!--CHARTS-->
+        <chart:Chart x:Name="Chart" Visibility="Collapsed" Grid.Row="1">
+            <chart:Chart.Series>
+                <chart:ColumnSeries Title="Votes"
+                                 IndependentValueBinding="{Binding Path=Key}"
+                                 DependentValueBinding="{Binding Path=Value}"/>
+            </chart:Chart.Series>
+        </chart:Chart>
+      
+    </Grid>
+</Window>
