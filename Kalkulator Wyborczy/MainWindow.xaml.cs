@@ -7,6 +7,8 @@ using System.Windows;
 using Firebase.Database;
 using Firebase.Database.Query;
 using Kalkulator_Wyborczy.Data;
+using Kalkulator_Wyborczy.Services;
+using System.Threading.Tasks;
 
 namespace Kalkulator_Wyborczy
 {
@@ -15,20 +17,28 @@ namespace Kalkulator_Wyborczy
     /// </summary>
     public partial class MainWindow : Window
     {
+        Cryptography cryptography;
+        Validation validation;
+        Connection connection;
+        FirebaseClient firebase;
         public MainWindow()
         {
+            cryptography = new Cryptography();
+            validation = new Validation();
+            connection = new Connection();
+
             InitializeComponent();
             SetupMainPage();
-           
         }
+
         private async void SetupMainPage()
         {
-            var firebase = new FirebaseClient("https://votingcalculator.firebaseio.com");  
+            await GetFirebaseInstanceAsync();
             //user name on main page
             string PESEL = Properties.Settings.Default.UserPESEL;
             Voter v = await firebase.Child("voters").Child(PESEL).OnceSingleAsync<Voter>();   
                       
-            voterBadge.Text = Cryptography.Decode(v.Name) + " " + Cryptography.Decode(v.Surname);
+            voterBadge.Text = await cryptography.Decode(v.Name) + " " + await cryptography.Decode(v.Surname);
 
             if (v.HasVoted)
             {
@@ -44,120 +54,40 @@ namespace Kalkulator_Wyborczy
                            .Child(elector)
                            .OnceSingleAsync<Candidate>();
                     votingInfo.Text = "You already voted for " + candidate.name + " from " + candidate.party + " party.";
-
                 }
                 else
-                {
-                    //if user sent invalid vote app also says him cause of voting lock
                     votingInfo.Text = "You already cast an invalid vote.";
-                }
-                //if user has voted he can see voting statistics
+
                 stats.Visibility = Visibility.Visible;
             }
             else
                 voteButton.IsEnabled = true;
         }
 
-
-        private void voteButton_Click(object sender, RoutedEventArgs e)
+        private async void voteButton_Click(object sender, RoutedEventArgs e)
         {
-            //if user is not on blacklist and is up to 18 he can enter voting card
-            if(checkIfAllowed() && checkIfMature())
-            {
-                var vc = new VotingCard();
-                vc.Show();
-                this.Hide();
-            }           
-        }
+            string pesel = await cryptography.Decode(Properties.Settings.Default.UserPESEL);
 
-        private bool checkIfAllowed()
-        {
-
-            //gets blacklist JSON and compares user's PESEL with PESEL numbers from blacklist
-            string sStream;
-            var sPath = "http://webtask.future-processing.com:8069/blocked";
-            using (var WebClient = new WebClient())
+            if (await validation.CheckIfAllowedAsync(pesel))
             {
-                sStream = WebClient.DownloadString(sPath);
-            }
-            JObject disallowed = JObject.Parse(sStream);
-            IList<JToken> results = disallowed["disallowed"]["person"].Children().ToList();
-
-            string pesel = Cryptography.Decode(input: Properties.Settings.Default.UserPESEL);
-            foreach (JToken p in results)
-            {
-                string s = p.ToObject<Person>().PESEL;
-                //if any PESEL matches user is not allowed, app sends notification and returns false
-                if (pesel.Equals(s))
+                if (await validation.CheckIfMatureAsync(pesel))
                 {
-                    addBlockedPESELtoStats();
-                    MessageBox.Show("You don't have voting rights.");
-                    return false;
+                    var vc = new VotingCard();
+                    vc.Show();
+                    this.Hide();
                 }
-            }
-            return true;
+            } else
+                AddBlockedPESELtoStats();
         }
 
-        private async void addBlockedPESELtoStats()
+        /// <summary>
+        /// Save in database vote attempt by citizen who lost voting rights.
+        /// </summary>
+        private async void AddBlockedPESELtoStats()
         {
-            var firebase = new FirebaseClient("https://votingcalculator.firebaseio.com");
             Votes getVotes = await firebase.Child("votes").OnceSingleAsync<Votes>();
             await firebase.Child("votes").PutAsync(new Votes(getVotes.Valid, getVotes.Invalid, getVotes.Blocked + 1));
         }
-
-
-        private bool checkIfMature()
-        {
-            int year, day;
-            string pesel = Cryptography.Decode(Properties.Settings.Default.UserPESEL);
-            //month
-            int rightmonth = int.Parse(pesel.Substring(2,2));
-            //year
-            string century = "", controlmonth = pesel.Substring(2,1);
-           //count century according to PESEL ISO, valid to maximum PESEL year - 2299
-            switch(controlmonth)
-            {
-                case "8":               
-                case "9":
-                    century = "18";
-                    rightmonth -= 80;
-                    break;
-                case "0":
-                case "1":
-                    century = "19";
-                    break;
-                case "2":
-                case "3":
-                    century = "20";
-                    rightmonth -= 20;
-                    break;
-                case "4":
-                case "5":
-                    century = "21";
-                    rightmonth -= 40;
-                    break;
-                case "6":
-                case "7":
-                    century = "22";
-                    rightmonth -= 60;
-                    break;
-            }
-            year = int.Parse(century + pesel.Substring(0, 2));           
-            //day
-            day = int.Parse(pesel.Substring(4, 2));
-            //check is user got up to 18
-            DateTime now = DateTime.Now;
-            DateTime userage = new DateTime(year, rightmonth, day);
-            DateTime uptoeighteen = now.AddYears(-18);
-            if (userage <= uptoeighteen)
-                return true;
-            else
-            {
-                MessageBox.Show("You are juvenile. You can't vote.");
-                return false;
-            }
-        }
-
         
         private void signOut_Click(object sender, RoutedEventArgs e)
         {
@@ -174,12 +104,16 @@ namespace Kalkulator_Wyborczy
             Application.Current.Shutdown();
         }
 
-
         private void stats_Click(object sender, RoutedEventArgs e)
         {
             var statistics = new Statistics();
             statistics.Show();
             this.Hide();
+        }
+
+        private async Task GetFirebaseInstanceAsync()
+        {
+            firebase = await connection.GetFirebaseClient();
         }
     }
 }

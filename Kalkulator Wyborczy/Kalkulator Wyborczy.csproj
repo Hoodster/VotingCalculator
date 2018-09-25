@@ -72,13 +72,18 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
-    <Compile Include="Data\Blocked.cs" />
+    <Compile Include="Data\Login.cs" />
+    <Compile Include="Data\Person.cs" />
     <Compile Include="Data\Candidate.cs" />
     <Compile Include="Data\DatabaseHelper.cs" />
     <Compile Include="Data\SaveFileHelper.cs" />
     <Compile Include="Data\Settings.cs" />
+    <Compile Include="Data\UserCredentials.cs" />
     <Compile Include="Data\Voter.cs" />
     <Compile Include="Data\Votes.cs" />
+    <Compile Include="Services\Connection.cs" />
+    <Compile Include="Services\Credentials.cs" />
+    <Compile Include="Services\Validation.cs" />
     <Compile Include="Statistics.xaml.cs">
       <DependentUpon>Statistics.xaml</DependentUpon>
     </Compile>
@@ -97,7 +102,7 @@
       <DependentUpon>App.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="Cryptography.cs" />
+    <Compile Include="Services\Cryptography.cs" />
     <Compile Include="Login.xaml.cs">
       <DependentUpon>Login.xaml</DependentUpon>
     </Compile>

@@ -7,7 +7,7 @@
         mc:Ignorable="d"
         Closing="Window_Closing"
        
-        Title="Voting Calculator | sign in" Height="650" Width="400">
+        Title="Voting Calculator | sign in" Height="650" MinHeight="650" MinWidth="300" Width="400">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition/>
